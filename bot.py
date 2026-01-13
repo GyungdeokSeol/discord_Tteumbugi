@@ -35,10 +35,20 @@ is_paused = {}       # {guild_id: bool}
 
 # --- 유튜브/FFmpeg 옵션 ---
 yt_dl_opts = {
-    'format': 'bestaudio/best',
-    'noplaylist': True,
-    'quiet': True,
-    'cookiefile': 'cookies.txt',  # <-- 이렇게 추가하세요!
+        'format': 'bestaudio/best',
+        'noplaylist': True,
+        'nocheckcertificate': True,
+        'ignoreerrors': False,
+        'logtostderr': False,
+        'quiet': True,
+        'no_warnings': True,
+        'default_search': 'auto',
+        'source_address': '0.0.0.0', # IPv4 강제 사용
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios'], # 핵심: 폰인 척 속이기
+            }
+        }
 }
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
