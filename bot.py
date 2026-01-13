@@ -38,7 +38,7 @@ yt_dl_opts = {
         'format': 'bestaudio/best',
         'noplaylist': True,
         'cookiefile': 'cookies.txt',   # 쿠키 사용
-        'user_agent': '여기에_아까_복사한_Mozilla_어쩌구_내용을_붙여넣으세요', 
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
