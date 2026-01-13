@@ -37,13 +37,14 @@ is_paused = {}       # {guild_id: bool}
 yt_dl_opts = {
     'format': 'bestaudio/best',
     'noplaylist': True,
-    'quiet': True
+    'quiet': True,
+    'cookiefile': 'cookies.txt',  # <-- 이렇게 추가하세요!
 }
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
 ffmpeg_options = {
-    'options': '-vn',
-    "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+    'options': '-vn'
 }
 
 # --- [Helper] 메시지 자동 삭제 도우미 함수 ---
@@ -318,11 +319,35 @@ async def stop_logic(guild):
 @bot.tree.command(name="play", description="노래를 재생하거나 대기열에 추가합니다.")
 @app_commands.describe(query="유튜브 링크 또는 검색어")
 async def play(interaction: discord.Interaction, query: str):
+    # 1. (기존 로직) 상태 메시지 초기화 및 Defer
     if interaction.guild.id not in status_messages:
-        # 첫 실행 시 로딩 메시지
-        msg = await interaction.response.send_message("loading...", ephemeral=False)
+        await interaction.response.defer() 
+        msg = await interaction.followup.send("loading...")
         status_messages[interaction.guild.id] = await interaction.original_response()
-    
+    else:
+        # (중요) 첫 실행이 아니어도 '생각할 시간'은 벌어야 오류가 안 납니다.
+        if not interaction.response.is_done():
+            await interaction.response.defer()
+
+    # ▼▼▼ [여기부터 추가된 내용] ▼▼▼
+
+    # 2. 사용자가 음성 채널에 있는지 확인
+    if not interaction.user.voice:
+        await interaction.followup.send("먼저 음성 채널에 들어가주세요! 🎤", ephemeral=True)
+        return
+
+    # 3. 봇이 음성 채널에 없으면 -> 사용자 방으로 자동 입장
+    if not interaction.guild.voice_client:
+        try:
+            channel = interaction.user.voice.channel
+            await channel.connect()
+        except Exception as e:
+            await interaction.followup.send(f"음성 채널 접속 실패: {e}")
+            return
+
+    # ▲▲▲ [여기까지 추가된 내용] ▲▲▲
+
+    # 4. (기존 로직) 노래 추가 로직 실행
     await add_song_logic(interaction, query)
 
 @bot.tree.command(name="remove", description="대기열에서 노래를 삭제합니다.")
