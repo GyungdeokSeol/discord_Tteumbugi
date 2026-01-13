@@ -273,8 +273,8 @@ async def add_song_logic(interaction, query):
             server_data[guild_id]['user_order'].append(user.id)
 
         # ▼▼▼ [수정] 메시지는 무조건 followup으로 보냄 ▼▼▼
-        await interaction.followup.send(f"✅ **{data['title']}** 추가 완료!")
-        
+        await interaction.followup.send(f"✅ **{data['title']}** 추가 완료!", delete_after=5)
+
         # 재생 로직
         if not guild.voice_client.is_playing() and not is_paused.get(guild_id, False):
             await play_next(guild)
