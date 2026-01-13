@@ -37,19 +37,16 @@ is_paused = {}       # {guild_id: bool}
 yt_dl_opts = {
         'format': 'bestaudio/best',
         'noplaylist': True,
+        'cookiefile': 'cookies.txt',   # 쿠키 사용
+        'user_agent': '여기에_아까_복사한_Mozilla_어쩌구_내용을_붙여넣으세요', 
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
         'quiet': True,
         'no_warnings': True,
         'default_search': 'auto',
-        'source_address': '0.0.0.0', # IPv4 강제 사용
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['android', 'ios'], # 핵심: 폰인 척 속이기
-            }
+        'source_address': '0.0.0.0',
         }
-}
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
 ffmpeg_options = {
