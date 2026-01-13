@@ -272,8 +272,9 @@ async def add_song_logic(interaction, query):
         if user.id not in server_data[guild_id]['user_order']:
             server_data[guild_id]['user_order'].append(user.id)
 
-        # ▼▼▼ [수정] 메시지는 무조건 followup으로 보냄 ▼▼▼
-        await interaction.followup.send(f"✅ **{data['title']}** 추가 완료!", delete_after=5)
+        # ▼▼▼ [수정] wait=True로 메시지 객체를 받고, delay 옵션으로 삭제합니다 ▼▼▼
+        sent_msg = await interaction.followup.send(f"✅ **{data['title']}** 추가 완료!", wait=True)
+        await sent_msg.delete(delay=5)
 
         # 재생 로직
         if not guild.voice_client.is_playing() and not is_paused.get(guild_id, False):
