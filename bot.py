@@ -220,25 +220,31 @@ async def add_song_logic(interaction, query):
     guild_id = guild.id
     user = interaction.user
     
+    # 1. (중복 방지) play 함수에서 이미 체크했지만 안전장치로 둠
     if not user.voice:
-        await send_alert(interaction, "먼저 음성 채널에 들어가주세요!")
+        await interaction.followup.send("먼저 음성 채널에 들어가주세요!")
         return
 
+    # 2. 봇 연결 확인 (play에서 했지만 비상용)
     if interaction.guild.voice_client is None:
-        await user.voice.channel.connect()
+        try:
+            await user.voice.channel.connect()
+        except:
+            pass # play 함수에서 이미 연결했을 테니 패스
 
+    # 데이터 초기화
     if guild_id not in server_data:
         server_data[guild_id] = {'user_order': [], 'user_songs': {}}
 
+    # URL 처리
     target_url = query
     if not ("youtube.com" in query or "youtu.be" in query):
         target_url = f"ytsearch1:{query}"
 
     try:
-        # 이미 응답(defer 등)된 상태인지 체크
-        if not interaction.response.is_done():
-            await interaction.response.defer()
+        # ▼▼▼ [수정 핵심] defer() 삭제함 (play 함수가 이미 함) ▼▼▼
 
+        # 노래 정보 추출
         loop = asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(target_url, download=False))
         
@@ -258,6 +264,7 @@ async def add_song_logic(interaction, query):
             'user_id': user.id
         }
 
+        # 서버 데이터에 저장
         if user.id not in server_data[guild_id]['user_songs']:
             server_data[guild_id]['user_songs'][user.id] = []
         server_data[guild_id]['user_songs'][user.id].append(song_info)
@@ -265,17 +272,19 @@ async def add_song_logic(interaction, query):
         if user.id not in server_data[guild_id]['user_order']:
             server_data[guild_id]['user_order'].append(user.id)
 
-        # 성공 메시지 (send_alert 사용)
-        await send_alert(interaction, f"✅ **{data['title']}** 추가 완료!")
+        # ▼▼▼ [수정] 메시지는 무조건 followup으로 보냄 ▼▼▼
+        await interaction.followup.send(f"✅ **{data['title']}** 추가 완료!")
         
+        # 재생 로직
         if not guild.voice_client.is_playing() and not is_paused.get(guild_id, False):
             await play_next(guild)
         else:
             await update_status_message(guild)
 
     except Exception as e:
-        await send_alert(interaction, f"오류 발생: {e}")
-        print(e)
+        # 에러 메시지도 followup으로
+        await interaction.followup.send(f"오류 발생: {e}")
+        print(f"에러 상세: {e}")
 
 # --- 재생 및 종료 로직 ---
 async def play_next(guild):
@@ -326,24 +335,22 @@ async def stop_logic(guild):
 @bot.tree.command(name="play", description="노래를 재생하거나 대기열에 추가합니다.")
 @app_commands.describe(query="유튜브 링크 또는 검색어")
 async def play(interaction: discord.Interaction, query: str):
-    # 1. (기존 로직) 상태 메시지 초기화 및 Defer
+    # 1. 안전한 Defer (이미 응답했는지 확인하고 시간 벌기)
+    if not interaction.response.is_done():
+        await interaction.response.defer()
+
+    # 2. 로딩 메시지 (Followup 사용)
+    # 기존에 status_messages 로직이 있다면 유지하되, send 대신 followup.send를 씁니다.
     if interaction.guild.id not in status_messages:
-        await interaction.response.defer() 
-        msg = await interaction.followup.send("loading...")
-        status_messages[interaction.guild.id] = await interaction.original_response()
-    else:
-        # (중요) 첫 실행이 아니어도 '생각할 시간'은 벌어야 오류가 안 납니다.
-        if not interaction.response.is_done():
-            await interaction.response.defer()
-
-    # ▼▼▼ [여기부터 추가된 내용] ▼▼▼
-
-    # 2. 사용자가 음성 채널에 있는지 확인
+        msg = await interaction.followup.send("loading...", wait=True)
+        status_messages[interaction.guild.id] = msg
+    
+    # 3. 사용자 음성 채널 확인
     if not interaction.user.voice:
         await interaction.followup.send("먼저 음성 채널에 들어가주세요! 🎤", ephemeral=True)
         return
 
-    # 3. 봇이 음성 채널에 없으면 -> 사용자 방으로 자동 입장
+    # 4. 봇 자동 입장 로직
     if not interaction.guild.voice_client:
         try:
             channel = interaction.user.voice.channel
@@ -352,9 +359,8 @@ async def play(interaction: discord.Interaction, query: str):
             await interaction.followup.send(f"음성 채널 접속 실패: {e}")
             return
 
-    # ▲▲▲ [여기까지 추가된 내용] ▲▲▲
-
-    # 4. (기존 로직) 노래 추가 로직 실행
+    # 5. 노래 추가 로직 실행
+    # (주의: add_song_logic 안에는 interaction.response.defer()가 없어야 합니다!)
     await add_song_logic(interaction, query)
 
 @bot.tree.command(name="remove", description="대기열에서 노래를 삭제합니다.")
