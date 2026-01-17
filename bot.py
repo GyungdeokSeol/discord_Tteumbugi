@@ -37,16 +37,23 @@ is_paused = {}       # {guild_id: bool}
 yt_dl_opts = {
         'format': 'bestaudio/best',
         'noplaylist': True,
-        'cookiefile': 'cookies.txt',   # 쿠키 사용
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 
+        'cookiefile': 'cookies.txt', 
+        # User-Agent는 FFMPEG에만 쓰고 여기선 지우거나 기본값 사용
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
         'quiet': True,
         'no_warnings': True,
         'default_search': 'auto',
-        'source_address': '0.0.0.0',
+        # 'source_address': '0.0.0.0',  <-- 이 줄을 반드시 지워야 합니다! (IPv6 사용 허용)
+        'extractor_args': {
+            'youtube': {
+                # 가장 중요한 핵심: 아이폰인 척 위장하기
+                'player_client': ['ios', 'web_creator'], 
+                'player_skip': ['webpage', 'configs', 'js'], 
+            }
         }
+    }
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
 ffmpeg_options = {
