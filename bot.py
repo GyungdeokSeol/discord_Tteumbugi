@@ -38,19 +38,17 @@ yt_dl_opts = {
         'format': 'bestaudio/best',
         'noplaylist': True,
         'cookiefile': 'cookies.txt', 
-        # User-Agent는 FFMPEG에만 쓰고 여기선 지우거나 기본값 사용
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
         'quiet': True,
         'no_warnings': True,
         'default_search': 'auto',
-        # 'source_address': '0.0.0.0',  <-- 이 줄을 반드시 지워야 합니다! (IPv6 사용 허용)
+        # 'source_address': '0.0.0.0',  <-- 주석 처리 유지 (IPv6 사용 허용)
         'extractor_args': {
             'youtube': {
-                # 가장 중요한 핵심: 아이폰인 척 위장하기
-                'player_client': ['ios', 'web_creator'], 
-                'player_skip': ['webpage', 'configs', 'js'], 
+                # 아이폰(ios)은 포맷 에러가 나므로 안드로이드(android)로 변경
+                'player_client': ['android'], 
             }
         }
     }
