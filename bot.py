@@ -37,28 +37,30 @@ is_paused = {}       # {guild_id: bool}
 yt_dl_opts = {
         'format': 'bestaudio/best',
         'noplaylist': True,
-        'cookiefile': 'cookies.txt',
-        
-        # ▼▼▼ [핵심] 여기에 아까 복사한 User-Agent를 넣어주세요! ▼▼▼
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
-        
+        'cookiefile': 'cookies.txt', 
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
         'quiet': True,
         'no_warnings': True,
         'default_search': 'auto',
-        # 'source_address': '0.0.0.0', # IPv6 허용 (주석 유지)
-        
-        # extractor_args 삭제함 (기본 Web 클라이언트 사용)
+        # source_address는 주석 처리하여 IPv6 사용 유도
+        # 'source_address': '0.0.0.0', 
+        'extractor_args': {
+            'youtube': {
+                # [핵심] 일반 android가 아니라 'android_creator'를 씁니다.
+                # 이게 'Format not available' 오류를 해결해줍니다.
+                'player_client': ['android_creator'],
+            }
+        }
     }
 
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
 ffmpeg_options = {
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-    'options': '-vn -headers "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"'
-}
+        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+        'options': '-vn'
+    }
 
 # --- [Helper] 메시지 자동 삭제 도우미 함수 ---
 
