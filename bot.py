@@ -35,8 +35,10 @@ is_paused = {}       # {guild_id: bool}
 
 # --- 유튜브/FFmpeg 옵션 ---
 yt_dl_opts = {
-        # TV는 형식이 다양하므로 'bestaudio'가 안 되면 'best(비디오포함)'라도 가져오게 설정
-        'format': 'bestaudio/best',
+        # [핵심 1] '오디오만' 찾지 말고 '동영상 전체(best)'를 가져오게 합니다.
+        # 이렇게 하면 포맷 없음 오류가 해결됩니다.
+        'format': 'best',
+        
         'noplaylist': True,
         'cookiefile': 'cookies.txt', 
         'nocheckcertificate': True,
@@ -45,13 +47,11 @@ yt_dl_opts = {
         'quiet': True,
         'no_warnings': True,
         'default_search': 'auto',
-        # IPv6 사용을 위해 source_address는 주석 처리 (오라클 서버 권장)
-        # 'source_address': '0.0.0.0', 
+        'source_address': '0.0.0.0',
         'extractor_args': {
             'youtube': {
-                # [핵심] 'ios' 대신 'tv' (스마트 TV) 클라이언트를 사용합니다.
-                # 포맷 오류와 403 오류를 동시에 잡는 최후의 수단입니다.
-                'player_client': ['tv'],
+                # [핵심 2] 403 차단을 뚫는 'ios' 사용
+                'player_client': ['ios'],
             }
         }
     }
