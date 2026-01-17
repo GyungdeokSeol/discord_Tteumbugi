@@ -35,8 +35,8 @@ is_paused = {}       # {guild_id: bool}
 
 # --- 유튜브/FFmpeg 옵션 ---
 yt_dl_opts = {
-        # [핵심 1] 아이폰이 좋아하는 m4a 형식을 1순위로 찾습니다.
-        'format': 'm4a/bestaudio/best',
+        # TV는 형식이 다양하므로 'bestaudio'가 안 되면 'best(비디오포함)'라도 가져오게 설정
+        'format': 'bestaudio/best',
         'noplaylist': True,
         'cookiefile': 'cookies.txt', 
         'nocheckcertificate': True,
@@ -45,11 +45,13 @@ yt_dl_opts = {
         'quiet': True,
         'no_warnings': True,
         'default_search': 'auto',
-        'source_address': '0.0.0.0', # iOS 쓸 때는 0.0.0.0(IPv4)이 더 안정적일 수 있습니다.
+        # IPv6 사용을 위해 source_address는 주석 처리 (오라클 서버 권장)
+        # 'source_address': '0.0.0.0', 
         'extractor_args': {
             'youtube': {
-                # [핵심 2] 가장 강력한 방패인 아이폰(ios) 사용
-                'player_client': ['ios'],
+                # [핵심] 'ios' 대신 'tv' (스마트 TV) 클라이언트를 사용합니다.
+                # 포맷 오류와 403 오류를 동시에 잡는 최후의 수단입니다.
+                'player_client': ['tv'],
             }
         }
     }
