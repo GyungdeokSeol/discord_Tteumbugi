@@ -35,7 +35,8 @@ is_paused = {}       # {guild_id: bool}
 
 # --- 유튜브/FFmpeg 옵션 ---
 yt_dl_opts = {
-        'format': 'bestaudio/best',
+        # [핵심 1] 아이폰이 좋아하는 m4a 형식을 1순위로 찾습니다.
+        'format': 'm4a/bestaudio/best',
         'noplaylist': True,
         'cookiefile': 'cookies.txt', 
         'nocheckcertificate': True,
@@ -44,20 +45,18 @@ yt_dl_opts = {
         'quiet': True,
         'no_warnings': True,
         'default_search': 'auto',
-        # source_address는 주석 처리하여 IPv6 사용 유도
-        # 'source_address': '0.0.0.0', 
+        'source_address': '0.0.0.0', # iOS 쓸 때는 0.0.0.0(IPv4)이 더 안정적일 수 있습니다.
         'extractor_args': {
             'youtube': {
-                # [핵심] 일반 android가 아니라 'android_creator'를 씁니다.
-                # 이게 'Format not available' 오류를 해결해줍니다.
-                'player_client': ['android_creator'],
+                # [핵심 2] 가장 강력한 방패인 아이폰(ios) 사용
+                'player_client': ['ios'],
             }
         }
     }
 
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
-ffmpeg_options = {
+FFMPEG_OPTIONS = {
         'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
         'options': '-vn'
     }
