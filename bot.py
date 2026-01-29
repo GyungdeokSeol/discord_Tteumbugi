@@ -41,7 +41,7 @@ yt_dl_opts = {
     # 403 오류와 포맷 찾기 오류를 동시에 해결할 수 있는 강력한 방법입니다.
     'extractor_args': {
         'youtube': {
-            'player_client': ['tv_embedded'],
+            'player_client': ['mweb'],
         }
     },
     
