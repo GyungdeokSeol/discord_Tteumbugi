@@ -33,14 +33,15 @@ is_paused = {}
 
 # --- [수정됨] 가정용 IP(갤럭시) 최적화 옵션 ---
 yt_dl_opts = {
-    'format': 'bestaudio/best', 
+    'format': 'bestaudio/best',
     'noplaylist': True,
     
-    # [핵심] '유튜브 스튜디오 앱'인 척합니다.
-    # 현재 가장 차단을 잘 뚫고, 숨겨진 오디오도 잘 찾아냅니다.
+    # [핵심 필살기] '스마트 TV 내장 앱'인 척합니다.
+    # 앱(Android/iOS)이나 웹(Web)보다 보안 검사가 훨씬 느슨합니다.
+    # 403 오류와 포맷 찾기 오류를 동시에 해결할 수 있는 강력한 방법입니다.
     'extractor_args': {
         'youtube': {
-            'player_client': ['android_creator'],
+            'player_client': ['tv_embedded'],
         }
     },
     
