@@ -32,22 +32,14 @@ status_messages = {}
 is_paused = {}       
 
 yt_dl_opts = {
-    # 포맷을 못 찾을 때를 대비해 조건을 완화합니다 (bestaudio가 없으면 best라도 가져와라)
-    'format': 'bestaudio/best/worst', 
+    # [핵심 1] 'bestaudio'가 안 되면 그냥 'best'(동영상+소리)를 가져오라고 지시합니다.
+    # 이렇게 하면 "Format not available" 오류가 거의 100% 사라집니다.
+    'format': 'bestaudio/best', 
     'noplaylist': True,
     
-    # [필수 1] 유튜브가 "너 누구야?" 할 때 내밀 신분증 (쿠키)
-    'cookiefile': 'cookies.txt', 
-    
-    # [필수 2] 쿠키와 짝이 맞는 PC 브라우저 정보 (아까 복사한 것 붙여넣기!)
-    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36',
-    
-    # [필수 3] 가장 의심을 덜 받는 'PC 웹' 클라이언트 사용
-    'extractor_args': {
-        'youtube': {
-            'player_client': ['web'],
-        }
-    },
+    # [핵심 2] 개발자 버전 yt-dlp를 설치했으므로, 
+    # 클라이언트 설정을 다 지우고 yt-dlp가 알아서 가장 좋은 걸 고르게 합니다.
+    # (아래 extractor_args 부분을 비워두는 게 포인트입니다.)
     
     'nocheckcertificate': True,
     'ignoreerrors': False,
