@@ -36,21 +36,22 @@ yt_dl_opts = {
     'format': 'bestaudio/best',
     'noplaylist': True,
     
-    # [중요 1] 이제 cookies.txt를 쓰지 않으므로 주석 처리하거나 지웁니다.
-    # 'cookiefile': 'cookies.txt', 
-    
-    # [중요 2] OAuth2 로그인 방식을 사용합니다.
-    'username': 'oauth2',
-    'password': '',  # 비밀번호는 비워둡니다.
-    
+    # --- [삭제됨] 인증 관련 옵션 싹 지움 ---
+    # 'cookiefile': ... 
+    # 'username': ...
+    # 'password': ...
+    # 'user_agent': ...
+    # 'extractor_args': ...
+    # ------------------------------------
+
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
     'quiet': True,
     'no_warnings': True,
     'default_search': 'auto',
+    'source_address': '0.0.0.0', # IPv4 강제 (가정용 공유기 호환성 UP)
 }
-
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
 # FFmpeg 옵션 (안드로이드에서는 경로는 자동 인식됩니다)
