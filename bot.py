@@ -33,17 +33,22 @@ is_paused = {}
 
 # --- [수정됨] 가정용 IP(갤럭시) 최적화 옵션 ---
 yt_dl_opts = {
-    'format': 'bestaudio/best', # 오디오 품질 우선
+    'format': 'bestaudio/best',
     'noplaylist': True,
+    
+    # [중요 1] 이제 cookies.txt를 쓰지 않으므로 주석 처리하거나 지웁니다.
+    # 'cookiefile': 'cookies.txt', 
+    
+    # [중요 2] OAuth2 로그인 방식을 사용합니다.
+    'username': 'oauth2',
+    'password': '',  # 비밀번호는 비워둡니다.
+    
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
     'quiet': True,
     'no_warnings': True,
     'default_search': 'auto',
-    # 가정용 IP에서는 쿠키나 복잡한 위장이 필요 없습니다.
-    # 만약 연령 제한 영상이 필요하면 그때 cookies.txt를 쓰면 됩니다.
-    # 'cookiefile': 'cookies.txt', 
 }
 
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
