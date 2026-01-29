@@ -33,14 +33,14 @@ is_paused = {}
 
 # --- [수정됨] 가정용 IP(갤럭시) 최적화 옵션 ---
 yt_dl_opts = {
-    'format': 'bestaudio/best', # 오디오가 없으면 동영상이라도 가져와라
+    'format': 'bestaudio/best', 
     'noplaylist': True,
     
-    # [핵심] '아이폰(ios)'인 척합니다.
-    # 안드로이드보다 차단이 적고, PC웹보다 포맷을 잘 찾습니다.
+    # [핵심] '유튜브 스튜디오 앱'인 척합니다.
+    # 현재 가장 차단을 잘 뚫고, 숨겨진 오디오도 잘 찾아냅니다.
     'extractor_args': {
         'youtube': {
-            'player_client': ['ios'],
+            'player_client': ['android_creator'],
         }
     },
     
