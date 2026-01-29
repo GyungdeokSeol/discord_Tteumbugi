@@ -36,21 +36,21 @@ yt_dl_opts = {
     'format': 'bestaudio/best',
     'noplaylist': True,
     
-    # --- [삭제됨] 인증 관련 옵션 싹 지움 ---
-    # 'cookiefile': ... 
-    # 'username': ...
-    # 'password': ...
-    # 'user_agent': ...
-    # 'extractor_args': ...
-    # ------------------------------------
-
+    # [핵심] 쿠키 없이 'PC 웹 브라우저'인 척합니다.
+    # 가정용 IP에서는 이 설정이 가장 차단을 덜 당합니다.
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['web'],
+        }
+    },
+    
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
     'quiet': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0', # IPv4 강제 (가정용 공유기 호환성 UP)
+    'source_address': '0.0.0.0', # IPv4 강제 사용
 }
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
