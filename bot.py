@@ -33,14 +33,14 @@ is_paused = {}
 
 # --- [수정됨] 가정용 IP(갤럭시) 최적화 옵션 ---
 yt_dl_opts = {
-    'format': 'bestaudio/best',
+    'format': 'bestaudio/best', # 오디오가 없으면 동영상이라도 가져와라
     'noplaylist': True,
     
-    # [핵심] 쿠키 없이 'PC 웹 브라우저'인 척합니다.
-    # 가정용 IP에서는 이 설정이 가장 차단을 덜 당합니다.
+    # [핵심] '아이폰(ios)'인 척합니다.
+    # 안드로이드보다 차단이 적고, PC웹보다 포맷을 잘 찾습니다.
     'extractor_args': {
         'youtube': {
-            'player_client': ['web'],
+            'player_client': ['ios'],
         }
     },
     
@@ -50,7 +50,7 @@ yt_dl_opts = {
     'quiet': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0', # IPv4 강제 사용
+    'source_address': '0.0.0.0',
 }
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
