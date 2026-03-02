@@ -53,7 +53,7 @@ ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
 # FFmpeg 옵션 (안드로이드에서는 경로는 자동 인식됩니다)
 ffmpeg_options = {
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5, -multiple_requests 1',
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -multiple_requests 1',
     'options': '-vn -threads 1 -bufsize 3000k'
 }
 
