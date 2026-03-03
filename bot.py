@@ -147,8 +147,8 @@ async def update_status_message(guild):
         channel = status_messages[guild_id].channel
     if not channel: return
 
-    # ⭐ 현재 서버의 볼륨 값을 가져와서 제목에 표시합니다 (기본값 30%)
-    current_vol = int(server_data.get(guild_id, {}).get('volume', 0.3) * 100)
+    # ⭐ 현재 서버의 볼륨 값을 가져와서 제목에 표시합니다 (기본값 20%)
+    current_vol = int(server_data.get(guild_id, {}).get('volume', 0.2) * 100)
     embed = discord.Embed(title=f"🎧 Music Player (🔊 {current_vol}%)", color=0x9900ff)
     
     if guild_id in current_song and current_song[guild_id]:
@@ -199,7 +199,7 @@ async def add_song_logic(interaction, query):
 
     # ⭐ 서버 데이터에 볼륨(volume) 초기값 0.3 (30%) 추가
     if guild_id not in server_data:
-        server_data[guild_id] = {'user_order': [], 'user_songs': {}, 'volume': 0.3}
+        server_data[guild_id] = {'user_order': [], 'user_songs': {}, 'volume': 0.2}
 
     target_url = query
     if not ("youtube.com" in query or "youtu.be" in query):
@@ -263,7 +263,7 @@ async def play_next(guild):
         player = discord.FFmpegPCMAudio(song_info['url'], **ffmpeg_options)
         
         # ⭐ 서버별로 저장된 볼륨 적용 (기본 30%)
-        current_volume = server_data.get(guild_id, {}).get('volume', 0.3)
+        current_volume = server_data.get(guild_id, {}).get('volume', 0.2)
         volume_player = discord.PCMVolumeTransformer(player, volume=current_volume)
         
         voice_client.play(volume_player, after=lambda e: bot.loop.create_task(play_next(guild)))
