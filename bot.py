@@ -147,7 +147,9 @@ async def update_status_message(guild):
         channel = status_messages[guild_id].channel
     if not channel: return
 
-    embed = discord.Embed(title="🎧 Music Player (🔊 50%)", color=0x9900ff)
+    # ⭐ 현재 서버의 볼륨 값을 가져와서 제목에 표시합니다 (기본값 30%)
+    current_vol = int(server_data.get(guild_id, {}).get('volume', 0.3) * 100)
+    embed = discord.Embed(title=f"🎧 Music Player (🔊 {current_vol}%)", color=0x9900ff)
     
     if guild_id in current_song and current_song[guild_id]:
         song = current_song[guild_id]
@@ -195,8 +197,9 @@ async def add_song_logic(interaction, query):
         try: await user.voice.channel.connect()
         except: pass
 
+    # ⭐ 서버 데이터에 볼륨(volume) 초기값 0.3 (30%) 추가
     if guild_id not in server_data:
-        server_data[guild_id] = {'user_order': [], 'user_songs': {}}
+        server_data[guild_id] = {'user_order': [], 'user_songs': {}, 'volume': 0.3}
 
     target_url = query
     if not ("youtube.com" in query or "youtu.be" in query):
@@ -257,9 +260,11 @@ async def play_next(guild):
         voice_client = guild.voice_client
         if not voice_client: return
 
-        # ⭐ 볼륨 조절이 적용된 부분입니다
         player = discord.FFmpegPCMAudio(song_info['url'], **ffmpeg_options)
-        volume_player = discord.PCMVolumeTransformer(player, volume=0.5) # 0.5 = 50%
+        
+        # ⭐ 서버별로 저장된 볼륨 적용 (기본 30%)
+        current_volume = server_data.get(guild_id, {}).get('volume', 0.3)
+        volume_player = discord.PCMVolumeTransformer(player, volume=current_volume)
         
         voice_client.play(volume_player, after=lambda e: bot.loop.create_task(play_next(guild)))
     else:
@@ -364,6 +369,30 @@ async def resume(interaction: discord.Interaction):
     else:
         await send_alert(interaction, "일시정지 상태가 아닙니다.")
 
+# ⭐ 새롭게 추가된 볼륨 명령어
+@bot.tree.command(name="volume", description="봇의 볼륨을 조절합니다 (0~100).")
+@app_commands.describe(vol="볼륨 크기 (0~100)")
+async def volume(interaction: discord.Interaction, vol: int):
+    if vol < 0 or vol > 100:
+        await send_alert(interaction, "❌ 볼륨은 0에서 100 사이로 입력해주세요.")
+        return
+
+    guild_id = interaction.guild.id
+    if guild_id not in server_data:
+        server_data[guild_id] = {'user_order': [], 'user_songs': {}, 'volume': 0.3}
+
+    # 0~100 사이의 숫자를 0.0~1.0 비율로 변환
+    new_volume = vol / 100.0
+    server_data[guild_id]['volume'] = new_volume
+
+    # 재생 중인 음악이 있다면 즉시 볼륨 변경
+    voice_client = interaction.guild.voice_client
+    if voice_client and voice_client.source and isinstance(voice_client.source, discord.PCMVolumeTransformer):
+        voice_client.source.volume = new_volume
+
+    await send_alert(interaction, f"🔊 볼륨이 **{vol}%**로 설정되었습니다.")
+    await update_status_message(interaction.guild)
+
 @bot.tree.command(name="stop", description="노래를 끄고 봇을 내보냅니다.")
 async def stop(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
@@ -374,6 +403,7 @@ async def stop(interaction: discord.Interaction):
 async def help(interaction: discord.Interaction):
     embed = discord.Embed(title="도움말", description="아래 명령어를 슬래시(/)와 함께 사용하세요.", color=0x00ff00)
     embed.add_field(name="/play [검색어/URL]", value="노래를 재생하거나 대기열에 추가합니다.", inline=False)
+    embed.add_field(name="/volume [0~100]", value="봇의 재생 볼륨을 조절합니다.", inline=False) # 도움말 추가
     embed.add_field(name="/skip", value="현재 노래를 건너뜁니다.", inline=False)
     embed.add_field(name="/remove [번호]", value="대기열에서 특정 번호의 노래를 지웁니다.", inline=False)
     embed.add_field(name="/swap [번호1] [번호2]", value="두 노래의 순서를 바꿉니다.", inline=False)
