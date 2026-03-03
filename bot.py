@@ -32,15 +32,8 @@ status_messages = {}
 is_paused = {}       
 
 yt_dl_opts = {
-    # [핵심 1] 'bestaudio'가 안 되면 그냥 'best'(동영상+소리)를 가져오라고 지시합니다.
-    # 이렇게 하면 "Format not available" 오류가 거의 100% 사라집니다.
     'format': 'bestaudio/best', 
     'noplaylist': True,
-    
-    # [핵심 2] 개발자 버전 yt-dlp를 설치했으므로, 
-    # 클라이언트 설정을 다 지우고 yt-dlp가 알아서 가장 좋은 걸 고르게 합니다.
-    # (아래 extractor_args 부분을 비워두는 게 포인트입니다.)
-    
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
@@ -51,7 +44,7 @@ yt_dl_opts = {
 }
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
-# FFmpeg 옵션 (안드로이드에서는 경로는 자동 인식됩니다)
+# FFmpeg 옵션
 ffmpeg_options = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -multiple_requests 1',
     'options': '-vn -threads 1 -bufsize 3000k'
@@ -154,7 +147,7 @@ async def update_status_message(guild):
         channel = status_messages[guild_id].channel
     if not channel: return
 
-    embed = discord.Embed(title="🎧 Music Player", color=0x9900ff)
+    embed = discord.Embed(title="🎧 Music Player (🔊 50%)", color=0x9900ff)
     
     if guild_id in current_song and current_song[guild_id]:
         song = current_song[guild_id]
@@ -264,8 +257,11 @@ async def play_next(guild):
         voice_client = guild.voice_client
         if not voice_client: return
 
+        # ⭐ 볼륨 조절이 적용된 부분입니다
         player = discord.FFmpegPCMAudio(song_info['url'], **ffmpeg_options)
-        voice_client.play(player, after=lambda e: bot.loop.create_task(play_next(guild)))
+        volume_player = discord.PCMVolumeTransformer(player, volume=0.5) # 0.5 = 50%
+        
+        voice_client.play(volume_player, after=lambda e: bot.loop.create_task(play_next(guild)))
     else:
         await play_next(guild)
 
