@@ -234,8 +234,10 @@ async def add_song_logic(interaction, query):
             await update_status_message(guild)
 
     except Exception as e:
-        await interaction.followup.send(f"오류 발생: {e}")
+        # send_alert 함수를 쓰면 5초 뒤에 알아서 깔끔하게 지워집니다!
+        await send_alert(interaction, f"❌ 오류 발생: {e}", delay=10)
         print(f"에러 상세: {e}")
+        
 
 # --- 재생 및 종료 로직 ---
 async def play_next(guild):
