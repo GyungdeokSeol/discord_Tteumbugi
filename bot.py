@@ -34,6 +34,7 @@ is_paused = {}
 yt_dl_opts = {
     'format': 'bestaudio/best', 
     'noplaylist': True,
+    'extract_flat': 'in_playlist', # 플레이리스트 내부 데이터까지 긁어오는 것 방지
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
@@ -47,7 +48,7 @@ ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 # FFmpeg 옵션
 ffmpeg_options = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -multiple_requests 1',
-    'options': '-vn -threads 1 -bufsize 3000k'
+    'options': '-vn -bufsize 10000k' # 일꾼 제한 해제 및 버퍼 10MB로 뻥튀기!
 }
 
 # --- [Helper] 메시지 자동 삭제 도우미 함수 ---
