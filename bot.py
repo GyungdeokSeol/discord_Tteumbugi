@@ -1,4 +1,5 @@
 import os
+import json # ⭐ 외부 하청(Subprocess) 결과를 읽기 위해 추가됨!
 from dotenv import load_dotenv
 import discord
 from discord import app_commands
@@ -31,10 +32,11 @@ current_song = {}
 status_messages = {} 
 is_paused = {}       
 
+# (이제 yt-dlp를 외부에서 실행하므로 이 설정은 파이썬 내부에서 쓰이지 않지만, 혹시 모를 호환성을 위해 남겨둡니다)
 yt_dl_opts = {
     'format': 'bestaudio/best', 
     'noplaylist': True,
-    'extract_flat': 'in_playlist', # 플레이리스트 내부 데이터까지 긁어오는 것 방지
+    'extract_flat': 'in_playlist',
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
@@ -45,10 +47,10 @@ yt_dl_opts = {
 }
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
-# FFmpeg 옵션
+# FFmpeg 옵션 (노트북용 버퍼 10MB 뻥튀기 세팅)
 ffmpeg_options = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -multiple_requests 1',
-    'options': '-vn -bufsize 10000k' # 일꾼 제한 해제 및 버퍼 10MB로 뻥튀기!
+    'options': '-vn -bufsize 10000k'
 }
 
 # --- [Helper] 메시지 자동 삭제 도우미 함수 ---
@@ -148,7 +150,6 @@ async def update_status_message(guild):
         channel = status_messages[guild_id].channel
     if not channel: return
 
-    # ⭐ 현재 서버의 볼륨 값을 가져와서 제목에 표시합니다 (기본값 20%)
     current_vol = int(server_data.get(guild_id, {}).get('volume', 0.2) * 100)
     embed = discord.Embed(title=f"🎧 Music Player (🔊 {current_vol}%)", color=0x9900ff)
     
@@ -198,7 +199,6 @@ async def add_song_logic(interaction, query):
         try: await user.voice.channel.connect()
         except: pass
 
-    # ⭐ 서버 데이터에 볼륨(volume) 초기값 0.3 (30%) 추가
     if guild_id not in server_data:
         server_data[guild_id] = {'user_order': [], 'user_songs': {}, 'volume': 0.2}
 
@@ -207,9 +207,35 @@ async def add_song_logic(interaction, query):
         target_url = f"ytsearch1:{query}"
 
     try:
-        loop = asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(target_url, download=False))
-        if 'entries' in data: data = data['entries'][0]
+        # ⭐ 파이썬의 뇌(GIL)를 멈추지 않도록 윈도우에 외부 하청(Subprocess)을 맡기는 부분!
+        cmd = [
+            'yt-dlp', 
+            '--dump-json', 
+            '--no-playlist', 
+            '--no-warnings', 
+            '--ignore-errors',
+            target_url
+        ]
+        
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        
+        stdout, stderr = await process.communicate()
+        
+        if not stdout:
+            raise Exception("유튜브에서 데이터를 가져오지 못했습니다. 다시 시도해 주세요.")
+            
+        # 결과물(문자열)을 JSON으로 해석합니다
+        raw_text = stdout.decode('utf-8').strip().split('\n')[0]
+        data = json.loads(raw_text)
+        
+        if 'entries' in data: 
+            data = data['entries'][0]
+
+        # -------------------------------------------------------------
 
         final_url = data['url']
         web_url = data.get('webpage_url', final_url)
@@ -235,7 +261,6 @@ async def add_song_logic(interaction, query):
             await update_status_message(guild)
 
     except Exception as e:
-        # send_alert 함수를 쓰면 5초 뒤에 알아서 깔끔하게 지워집니다!
         await send_alert(interaction, f"❌ 오류 발생: {e}", delay=10)
         print(f"에러 상세: {e}")
         
@@ -265,7 +290,6 @@ async def play_next(guild):
 
         player = discord.FFmpegPCMAudio(song_info['url'], **ffmpeg_options)
         
-        # ⭐ 서버별로 저장된 볼륨 적용 (기본 30%)
         current_volume = server_data.get(guild_id, {}).get('volume', 0.2)
         volume_player = discord.PCMVolumeTransformer(player, volume=current_volume)
         
@@ -372,7 +396,6 @@ async def resume(interaction: discord.Interaction):
     else:
         await send_alert(interaction, "일시정지 상태가 아닙니다.")
 
-# ⭐ 새롭게 추가된 볼륨 명령어
 @bot.tree.command(name="volume", description="봇의 볼륨을 조절합니다 (0~100).")
 @app_commands.describe(vol="볼륨 크기 (0~100)")
 async def volume(interaction: discord.Interaction, vol: int):
@@ -382,13 +405,11 @@ async def volume(interaction: discord.Interaction, vol: int):
 
     guild_id = interaction.guild.id
     if guild_id not in server_data:
-        server_data[guild_id] = {'user_order': [], 'user_songs': {}, 'volume': 0.3}
+        server_data[guild_id] = {'user_order': [], 'user_songs': {}, 'volume': 0.2}
 
-    # 0~100 사이의 숫자를 0.0~1.0 비율로 변환
     new_volume = vol / 100.0
     server_data[guild_id]['volume'] = new_volume
 
-    # 재생 중인 음악이 있다면 즉시 볼륨 변경
     voice_client = interaction.guild.voice_client
     if voice_client and voice_client.source and isinstance(voice_client.source, discord.PCMVolumeTransformer):
         voice_client.source.volume = new_volume
@@ -406,7 +427,7 @@ async def stop(interaction: discord.Interaction):
 async def help(interaction: discord.Interaction):
     embed = discord.Embed(title="도움말", description="아래 명령어를 슬래시(/)와 함께 사용하세요.", color=0x00ff00)
     embed.add_field(name="/play [검색어/URL]", value="노래를 재생하거나 대기열에 추가합니다.", inline=False)
-    embed.add_field(name="/volume [0~100]", value="봇의 재생 볼륨을 조절합니다.", inline=False) # 도움말 추가
+    embed.add_field(name="/volume [0~100]", value="봇의 재생 볼륨을 조절합니다.", inline=False)
     embed.add_field(name="/skip", value="현재 노래를 건너뜁니다.", inline=False)
     embed.add_field(name="/remove [번호]", value="대기열에서 특정 번호의 노래를 지웁니다.", inline=False)
     embed.add_field(name="/swap [번호1] [번호2]", value="두 노래의 순서를 바꿉니다.", inline=False)
