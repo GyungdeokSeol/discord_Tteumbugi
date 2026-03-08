@@ -207,13 +207,12 @@ async def add_song_logic(interaction, query):
         target_url = f"ytsearch1:{query}"
 
     try:
-        # ⭐ 파이썬의 뇌(GIL)를 멈추지 않도록 윈도우에 외부 하청(Subprocess)을 맡기는 부분!
+        # ⭐ 명령어에 오디오 전용 추출(-f)을 추가하고, 에러 무시 옵션을 뺐습니다!
         cmd = [
             'yt-dlp', 
+            '-f', 'bestaudio/best', 
             '--dump-json', 
             '--no-playlist', 
-            '--no-warnings', 
-            '--ignore-errors',
             target_url
         ]
         
@@ -225,6 +224,12 @@ async def add_song_logic(interaction, query):
         
         stdout, stderr = await process.communicate()
         
+        # 1차 방어: yt-dlp 자체가 실패했을 경우 (연령 제한, 재생 불가 등)
+        if process.returncode != 0:
+            # 에러 로그에서 가장 중요한 마지막 줄만 가져와서 보여줍니다.
+            err_msg = stderr.decode('utf-8').strip().split('\n')[-1] 
+            raise Exception(f"영상 접근 불가 ({err_msg})")
+            
         if not stdout:
             raise Exception("유튜브에서 데이터를 가져오지 못했습니다. 다시 시도해 주세요.")
             
@@ -235,6 +240,13 @@ async def add_song_logic(interaction, query):
         if 'entries' in data: 
             data = data['entries'][0]
 
+        # 2차 방어: url 키가 정말로 있는지 안전하게 확인 ('url' 에러 원천 차단)
+        final_url = data.get('url')
+        if not final_url:
+            raise Exception("오디오 추출이 막힌 영상입니다. 다른 유튜버가 올린 가사 영상 등으로 시도해 주세요.")
+
+        web_url = data.get('webpage_url', final_url)
+        if "&list=" in web_url: web_url = web_url.split("&list=")[0]
         # -------------------------------------------------------------
 
         final_url = data['url']
