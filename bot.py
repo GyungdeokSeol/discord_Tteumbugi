@@ -6,6 +6,43 @@ from discord import app_commands
 from discord.ext import commands
 import yt_dlp
 import asyncio
+import sys
+import logging
+from logging.handlers import TimedRotatingFileHandler
+
+# --- 📁 자동 로그 저장 시스템 세팅 ---
+# 1. logs 라는 폴더가 없으면 알아서 만듭니다.
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+# 2. 자정(midnight)마다 파일을 분리하고, 최대 30일치만 보관하는 설정입니다.
+log_handler = TimedRotatingFileHandler(
+    filename='logs/bot.log', 
+    when='midnight', 
+    interval=1, 
+    backupCount=30, # 30일이 지난 오래된 로그는 알아서 삭제합니다.
+    encoding='utf-8'
+)
+log_handler.suffix = "%Y-%m-%d.txt" # 분리된 파일 이름에 날짜를 붙입니다.
+log_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(log_handler)
+
+# 3. 기존의 print() 내용과 빨간색 에러들을 모두 로그 파일로 자동 납치(?)하는 마법의 클래스입니다.
+class StreamToLogger:
+    def __init__(self, logger, level):
+        self.logger = logger
+        self.level = level
+    def write(self, message):
+        if message.strip():
+            self.logger.log(self.level, message.strip())
+    def flush(self): pass
+
+sys.stdout = StreamToLogger(logger, logging.INFO)
+sys.stderr = StreamToLogger(logger, logging.ERROR)
+# ----------------------------------------
 
 # --- 설정값 ---
 load_dotenv()
