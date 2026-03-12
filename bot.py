@@ -31,18 +31,27 @@ logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
 # 3. 기존의 print() 내용과 빨간색 에러들을 모두 로그 파일로 자동 납치(?)하는 마법의 클래스입니다.
+original_stdout = sys.stdout
+original_stderr = sys.stderr
+
 class StreamToLogger:
-    def __init__(self, logger, level):
+    def __init__(self, logger, level, original_stream):
         self.logger = logger
         self.level = level
+        self.original_stream = original_stream
+        
     def write(self, message):
         if message.strip():
             self.logger.log(self.level, message.strip())
+        # 가로챈 메시지를 로그에 적은 뒤, 원래 까만 화면에도 띄워줍니다!
+        self.original_stream.write(message)
+        self.original_stream.flush()
+        
     def flush(self): pass
 
-sys.stdout = StreamToLogger(logger, logging.INFO)
-sys.stderr = StreamToLogger(logger, logging.ERROR)
-# ----------------------------------------
+sys.stdout = StreamToLogger(logger, logging.INFO, original_stdout)
+sys.stderr = StreamToLogger(logger, logging.ERROR, original_stderr)
+# ----------------------------------------# ----------------------------------------
 
 # --- 설정값 ---
 load_dotenv()
