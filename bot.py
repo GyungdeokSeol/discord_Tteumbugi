@@ -1,4 +1,7 @@
 import os
+import threading
+import pystray
+from PIL import Image, ImageDraw
 import json # ⭐ 외부 하청(Subprocess) 결과를 읽기 위해 추가됨!
 from dotenv import load_dotenv
 import discord
@@ -498,5 +501,29 @@ async def help(interaction: discord.Interaction):
 async def on_ready():
     print(f'{bot.user} 로그인 성공!')
     await bot.tree.sync()
+
+# 1. 트레이 아이콘용 간단한 이미지(색상 사각형)를 생성하는 함수
+def create_image():
+    image = Image.new('RGB', (64, 64), color=(114, 137, 218)) # 디스코드 색상
+    d = ImageDraw.Draw(image)
+    d.rectangle([16, 16, 48, 48], fill=(255, 255, 255))
+    return image
+
+# 2. 메뉴에서 '종료'를 눌렀을 때 봇을 완전히 끄는 함수
+def on_quit(icon, item):
+    icon.stop()
+    os._exit(0) # 봇 프로세스 강제 종료
+
+# 3. 트레이 아이콘을 세팅하고 실행하는 함수
+def setup_tray():
+    image = create_image()
+    menu = pystray.Menu(pystray.MenuItem('봇 종료(Quit)', on_quit))
+    icon = pystray.Icon("DiscordBot", image, "디스코드 봇 작동 중", menu)
+    icon.run()
+
+# 4. 트레이 아이콘을 별도의 스레드로 백그라운드에서 실행
+tray_thread = threading.Thread(target=setup_tray)
+tray_thread.daemon = True
+tray_thread.start()
 
 bot.run(TOKEN)
