@@ -112,6 +112,18 @@ class AddSongModal(discord.ui.Modal, title='노래 추가하기'):
         await send_alert(interaction, f"🔍 **{self.query.value}** 검색 중...", 5)
         await add_song_logic(interaction, self.query.value)
 
+class AddPlaylistModal(discord.ui.Modal, title='재생목록 추가하기'):
+    url = discord.ui.TextInput(
+        label='유튜브 재생목록 URL', 
+        placeholder='https://www.youtube.com/playlist?list=...',
+        required=True
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await send_alert(interaction, "📂 재생목록을 분석하고 곡을 담는 중입니다...", 5)
+        # 아래 3번에서 만들 통합 처리 함수를 호출합니다.
+        await add_playlist_logic(interaction, self.url.value)
+
 class MusicControlView(discord.ui.View):
     def __init__(self, guild_id):
         super().__init__(timeout=None)
@@ -120,6 +132,10 @@ class MusicControlView(discord.ui.View):
     @discord.ui.button(label="노래 추가", style=discord.ButtonStyle.green, emoji="➕")
     async def add_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(AddSongModal())
+
+    @discord.ui.button(label="재생목록 추가", style=discord.ButtonStyle.success, emoji="📂")
+    async def playlist_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(AddPlaylistModal())
 
     @discord.ui.button(label="일시정지/재생", style=discord.ButtonStyle.primary, emoji="⏯️")
     async def pause_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -273,6 +289,75 @@ async def add_song_logic(interaction, query):
         await send_alert(interaction, f"오류 발생: {e}")
         print(e)
 
+# --- 재생목록 추가 핵심 로직 ---
+async def add_playlist_logic(interaction, url):
+    guild_id = interaction.guild.id
+    user = interaction.user
+
+    if not user.voice:
+        await send_alert(interaction, "먼저 음성 채널에 들어가주세요! 🎤")
+        return
+
+    if not interaction.response.is_done():
+        await interaction.response.defer()
+
+    if not interaction.guild.voice_client:
+        try: await user.voice.channel.connect()
+        except Exception as e:
+            await send_alert(interaction, f"음성 채널 접속 실패: {e}")
+            return
+
+    try:
+        loop = asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ytdl_playlist.extract_info(url, download=False))
+        
+        if 'entries' not in data:
+            await send_alert(interaction, "❌ 재생목록을 찾을 수 없습니다. 비공개이거나 잘못된 링크입니다.")
+            return
+            
+        entries = data['entries']
+        added_count = 0
+        
+        if guild_id not in server_data:
+            server_data[guild_id] = {'user_order': [], 'user_songs': {}}
+
+        for entry in entries:
+            if not entry: continue
+            target_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+            
+            try:
+                detail_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(target_url, download=False))
+                
+                song_info = {
+                    'url': detail_data['url'],
+                    'web_url': detail_data.get('webpage_url', target_url),
+                    'title': detail_data['title'],
+                    'thumbnail': detail_data.get('thumbnail'),
+                    'requester': user.display_name,
+                    'user_id': user.id
+                }
+                
+                if user.id not in server_data[guild_id]['user_songs']:
+                    server_data[guild_id]['user_songs'][user.id] = []
+                    
+                server_data[guild_id]['user_songs'][user.id].append(song_info)
+                server_data[guild_id]['user_order'].append(user.id)
+                added_count += 1
+                
+            except Exception as e:
+                print(f"재생목록 곡 추출 실패: {e}")
+                continue
+
+        await send_alert(interaction, f"✅ 재생목록에서 **{added_count}곡**을 성공적으로 대기열에 담았습니다!")
+        
+        if not interaction.guild.voice_client.is_playing() and not is_paused.get(guild_id, False):
+            await play_next(interaction.guild)
+        else:
+            await update_status_message(interaction.guild)
+            
+    except Exception as e:
+        await send_alert(interaction, f"❌ 재생목록 처리 중 오류가 발생했습니다: {e}")
+
 # --- 자동 재생(Autoplay) 핵심 로직 ---
 async def auto_play_related(guild, last_song):
     match = re.search(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", last_song['web_url'])
@@ -392,81 +477,11 @@ async def play(interaction: discord.Interaction, query: str):
 
     await add_song_logic(interaction, query)
 
-@bot.tree.command(name="playlist", description="유튜브 재생목록 링크를 입력해 최대 20곡을 한 번에 추가합니다.")
+@bot.tree.command(name="playlist", description="유튜브 재생목록 링크를 입력해 최대 20곡을 추가합니다.")
 @app_commands.describe(url="재생목록 링크")
 async def playlist(interaction: discord.Interaction, url: str):
-    if not interaction.user.voice:
-        await interaction.response.send_message("먼저 음성 채널에 들어가주세요! 🎤", ephemeral=True)
-        return
-
-    if not interaction.response.is_done():
-        await interaction.response.defer()
-        
-    if interaction.guild.id not in status_messages:
-        msg = await interaction.followup.send("로딩 중...")
-        status_messages[interaction.guild.id] = await interaction.original_response()
-
-    if not interaction.guild.voice_client:
-        try: await interaction.user.voice.channel.connect()
-        except Exception as e:
-            await interaction.followup.send(f"음성 채널 접속 실패: {e}")
-            return
-
-    await interaction.followup.send("📂 재생목록을 분석하고 곡을 담는 중입니다. (10~20초 소요)", ephemeral=True)
-
-    try:
-        loop = asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl_playlist.extract_info(url, download=False))
-        
-        if 'entries' not in data:
-            await interaction.followup.send("❌ 재생목록을 찾을 수 없습니다. 비공개이거나 잘못된 링크입니다.", ephemeral=True)
-            return
-            
-        entries = data['entries']
-        guild_id = interaction.guild.id
-        user = interaction.user
-        added_count = 0
-        
-        if guild_id not in server_data:
-            server_data[guild_id] = {'user_order': [], 'user_songs': {}}
-
-        for entry in entries:
-            if not entry: continue
-            target_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
-            
-            try:
-                detail_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(target_url, download=False))
-                
-                song_info = {
-                    'url': detail_data['url'],
-                    'web_url': detail_data.get('webpage_url', target_url),
-                    'title': detail_data['title'],
-                    'thumbnail': detail_data.get('thumbnail'),
-                    'requester': user.display_name,
-                    'user_id': user.id
-                }
-                
-                if user.id not in server_data[guild_id]['user_songs']:
-                    server_data[guild_id]['user_songs'][user.id] = []
-                    
-                server_data[guild_id]['user_songs'][user.id].append(song_info)
-                server_data[guild_id]['user_order'].append(user.id)
-                added_count += 1
-                
-            except Exception as e:
-                print(f"재생목록 곡 추출 실패: {e}")
-                continue
-
-        await send_alert(interaction, f"✅ 재생목록에서 **{added_count}곡**을 성공적으로 대기열에 담았습니다!")
-        
-        if not interaction.guild.voice_client.is_playing() and not is_paused.get(guild_id, False):
-            await play_next(interaction.guild)
-        else:
-            await update_status_message(interaction.guild)
-            
-    except Exception as e:
-        await send_alert(interaction, f"❌ 재생목록 처리 중 오류가 발생했습니다: {e}")
-
+    await add_playlist_logic(interaction, url)
+    
 @bot.tree.command(name="remove", description="대기열에서 노래를 삭제합니다.")
 @app_commands.describe(index="삭제할 노래의 번호 (대기열에 보이는 숫자)")
 async def remove(interaction: discord.Interaction, index: int):
