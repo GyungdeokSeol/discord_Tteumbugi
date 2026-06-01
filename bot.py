@@ -7,6 +7,13 @@ from discord.ext import commands
 import yt_dlp
 import asyncio
 
+# --- 데이터 저장소 ---
+server_data = {} 
+current_song = {}    
+status_messages = {} 
+is_paused = {}       
+server_volumes = {}  # ⭐ 추가: {guild_id: float} (서버별 볼륨 저장)
+
 # --- 설정값 ---
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -436,6 +443,18 @@ async def play_next(guild):
         voice_client.play(player, after=lambda e: bot.loop.create_task(play_next(guild)))
     else:
         await play_next(guild)
+
+    # (기존 코드) 원본 오디오 소스
+        voice_client = guild.voice_client
+        if not voice_client: return
+
+        audio_source = discord.FFmpegPCMAudio(song_info['url'], **ffmpeg_options)
+        
+        # ⭐ 여기에 볼륨 필터를 추가해서 0.2(20%)로 강제 고정합니다!
+        player = discord.PCMVolumeTransformer(audio_source, volume=0.2)
+        
+        # (기존 코드) 재생 시작
+        voice_client.play(player, after=lambda e: bot.loop.create_task(play_next(guild)))
 
 async def stop_logic(guild):
     guild_id = guild.id
