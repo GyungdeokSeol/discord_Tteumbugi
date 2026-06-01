@@ -46,11 +46,15 @@ class StreamToLogger:
     def write(self, message):
         if message.strip():
             self.logger.log(self.level, message.strip())
-        # 가로챈 메시지를 로그에 적은 뒤, 원래 까만 화면에도 띄워줍니다!
-        self.original_stream.write(message)
-        self.original_stream.flush()
         
-    def flush(self): pass
+        # ⭐ 방어막 추가: 까만 창(original_stream)이 살아있을 때만 화면에 띄워라!
+        if self.original_stream:
+            self.original_stream.write(message)
+            self.original_stream.flush()
+            
+    def flush(self):
+        if self.original_stream:
+            self.original_stream.flush()
 
 sys.stdout = StreamToLogger(logger, logging.INFO, original_stdout)
 sys.stderr = StreamToLogger(logger, logging.ERROR, original_stderr)
