@@ -12,7 +12,7 @@ import asyncio
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-BLOCKED_CHANNELS = ["@BUGISING"]
+BLOCKED_CHANNELS = ["@BUGISING", "@yiyowo"]
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -235,13 +235,6 @@ async def add_song_logic(interaction, query):
         loop = asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(target_url, download=False))
         if 'entries' in data: data = data['entries'][0]
-
-        uploader = data.get('uploader_id') or data.get('channel_id')
-        if uploader in BLOCKED_CHANNELS:
-            await send_alert(interaction, f"🚫 **{uploader}** 채널의 영상은 차단되어 재생할 수 없습니다.")
-            return
-
-        final_url = data['url']
 
         final_url = data['url']
         web_url = data.get('webpage_url', final_url)
