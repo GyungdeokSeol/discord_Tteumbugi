@@ -153,6 +153,7 @@ class MusicControlView(discord.ui.View):
         await stop_logic(interaction.guild)
 
 # --- 상태창 업데이트 ---
+# --- 상태창 업데이트 함수 ---
 async def update_status_message(guild):
     guild_id = guild.id
     channel = status_messages.get(guild_id)
@@ -162,14 +163,26 @@ async def update_status_message(guild):
 
     embed = discord.Embed(title="🎧 Music Player", color=0x9900ff)
     
+    # ⭐ 1. 현재 곡 정보 (여기도 1024자 초과 방어막 추가!)
     if guild_id in current_song and current_song[guild_id]:
         song = current_song[guild_id]
         status = "⏸️ 일시정지" if is_paused.get(guild_id, False) else "▶️ 재생 중"
-        embed.add_field(name=status, value=f"[{song['title']}]({song['web_url']})\n🎤 신청자: **{song['requester']}**", inline=False)
-        if song.get('thumbnail'): embed.set_thumbnail(url=song['thumbnail'])
+        
+        # 제목이 비정상적으로 길면 50자에서 컷!
+        title = song['title']
+        if len(title) > 50: title = title[:47] + "..."
+        
+        value_text = f"[{title}]({song['web_url']})\n🎤 신청자: **{song['requester']}**"
+        
+        # 만약 URL 자체에 꼬리표가 너무 많이 붙어서 1000자가 넘어가면 강제 컷!
+        if len(value_text) > 1000:
+            value_text = value_text[:950] + "...\n*(링크가 너무 길어 생략됨)*"
+            
+        embed.add_field(name=status, value=value_text, inline=False)
     else:
         embed.add_field(name="💤 상태", value="대기 중...", inline=False)
 
+    # ⭐ 2. 전체 대기열 표시 (기존 방어막 유지)
     display_queue = get_display_queue(guild_id)
     if display_queue:
         queue_text = ""
@@ -178,11 +191,9 @@ async def update_status_message(guild):
             song = display_queue[i]
             title = song['title'] if len(song['title']) <= 35 else song['title'][:35] + "..."
             queue_text += f"`{i+1}.` {title} - {song['requester']}\n"
-            
         if len(display_queue) > max_display:
             queue_text += f"\n*...그리고 **{len(display_queue) - max_display}곡**이 더 대기 중입니다! 🎶*"
-            
-        # ⭐ [여기에 방어막 추가!] 전체 텍스트가 1000자를 넘어가면 강제로 자릅니다.
+        
         if len(queue_text) > 1000:
             queue_text = queue_text[:950] + "\n...(글자 수 제한으로 생략됨)"
             
