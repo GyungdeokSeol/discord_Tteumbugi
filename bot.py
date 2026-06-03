@@ -333,9 +333,9 @@ async def auto_play_related(guild, last_song):
                     for entry in data['entries']:
                         if not entry: continue
                         vid = entry.get('id')
-                        # 핵심: 유튜브 추천 목록 중, 최근 30곡 기록에 없는 '새로운' 노래만 쏙 빼옵니다!
+                        # 핵심: 기록에 없는 노래면, 무조건 깨끗한 유튜브 주소로 직접 조립합니다!
                         if vid and vid not in played_history[guild_id]:
-                            target_url = entry.get('url') or f"https://www.youtube.com/watch?v={vid}"
+                            target_url = f"https://www.youtube.com/watch?v={vid}"
                             played_history[guild_id].append(vid)
                             break
             except: pass
@@ -347,9 +347,11 @@ async def auto_play_related(guild, last_song):
         try:
             loop = asyncio.get_event_loop()
             data = await loop.run_in_executor(None, lambda: ytdl.extract_info(query, download=False))
-            if 'entries' in data:
-                target_url = data['entries'][0]['url']
-                played_history[guild_id].append(data['entries'][0].get('id'))
+            if 'entries' in data and data['entries']:
+                vid = data['entries'][0].get('id')
+                # 대체 검색 시에도 이상한 원본 파일 대신 깨끗한 주소로 조립합니다.
+                target_url = f"https://www.youtube.com/watch?v={vid}"
+                played_history[guild_id].append(vid)
         except: return
 
     # 기록 데이터가 무거워지지 않게 최근 30곡까지만 기억력 유지
