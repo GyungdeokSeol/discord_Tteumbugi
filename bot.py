@@ -296,7 +296,6 @@ async def add_playlist_logic(interaction, url):
         if guild_id not in server_data: server_data[guild_id] = {'user_order': [], 'user_songs': {}}
 
         for entry in entries:
-            for entry in entries:
             if not entry: continue
             
             # ⭐ 방어막 2: 재생목록 추출 과정에서 차단 채널 1차 필터링
