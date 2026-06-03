@@ -342,7 +342,7 @@ async def auto_play_related(guild, last_song):
 
     # 기록이 비었거나 추천곡을 못 찾았다면 즉시 분위기에 맞는 곡 장전
     if not target_url:
-        fallback_queries = ["ytsearch1:마비노기 BGM", "ytsearch1:프로젝트 세카이 메들리", "ytsearch1:lofi hip hop radio"]
+        fallback_queries = ["ytsearch1:마비노기 BGM", "ytsearch1:프로젝트 세카이", "ytsearch1:jpop"]
         query = random.choice(fallback_queries)
         try:
             loop = asyncio.get_event_loop()
@@ -551,6 +551,32 @@ async def stop(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     await stop_logic(interaction.guild)
     await interaction.followup.send("👋 봇이 퇴장했습니다.", ephemeral=True)
+
+@bot.tree.command(name="refresh", description="봇이 적은 이전 메시지들을 싹 청소하고 플레이어를 새로 띄웁니다.")
+async def refresh(interaction: discord.Interaction):
+    # 청소 작업은 시간이 조금 걸릴 수 있으므로 '생각 중' 상태로 대기합니다. (유저 본인에게만 보임)
+    await interaction.response.defer(ephemeral=True)
+    
+    # 1. 현재 채널에서 '봇이 작성한 메시지'만 골라서 삭제 (최근 100개 기준)
+    try:
+        deleted = await interaction.channel.purge(limit=100, check=lambda m: m.author == bot.user)
+    except Exception as e:
+        await interaction.followup.send(f"청소 중 오류가 발생했습니다: {e}", ephemeral=True)
+        return
+        
+    # 2. 플레이어 창을 현재 채널에 새로 띄우기 위한 '가짜 메시지(Dummy)' 꼼수
+    class DummyMsg:
+        def __init__(self, ch):
+            self.channel = ch
+            
+    # 기존 상태창 데이터를 가짜 데이터로 덮어씌워서, 봇이 '수정' 대신 '새로 작성'하도록 유도합니다.
+    status_messages[interaction.guild.id] = DummyMsg(interaction.channel)
+    
+    # 3. 상태창 새로고침 로직 실행
+    await update_status_message(interaction.guild)
+    
+    # 완료 안내 메시지
+    await interaction.followup.send(f"🧹 {len(deleted)}개의 메시지를 청소하고 플레이어를 아래로 불러왔습니다!", ephemeral=True)
 
 @bot.event
 async def on_ready():
