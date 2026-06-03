@@ -330,26 +330,36 @@ async def auto_play_related(guild, last_song):
                 loop = asyncio.get_event_loop()
                 data = await loop.run_in_executor(None, lambda: ytdl_playlist.extract_info(mix_url, download=False))
                 if 'entries' in data:
+                    # ⭐ 변경된 부분: 무조건 1번을 뽑지 않고, 새로운 곡 후보를 10개까지 모읍니다!
+                    candidate_vids = []
                     for entry in data['entries']:
                         if not entry: continue
                         vid = entry.get('id')
-                        # 핵심: 기록에 없는 노래면, 무조건 깨끗한 유튜브 주소로 직접 조립합니다!
+                        
+                        # 기록에 없는 새로운 노래라면 장바구니에 담기
                         if vid and vid not in played_history[guild_id]:
-                            target_url = f"https://www.youtube.com/watch?v={vid}"
-                            played_history[guild_id].append(vid)
+                            candidate_vids.append(vid)
+                            
+                        # 후보가 10곡이 모이면 그만 찾기 (숫자를 키울수록 더 뜬금없는 곡이 나옵니다)
+                        if len(candidate_vids) >= 10:
                             break
+                    
+                    # ⭐ 후보군 중에서 무작위(랜덤)로 한 곡을 뽑아 다양성을 확보합니다!
+                    if candidate_vids:
+                        chosen_vid = random.choice(candidate_vids)
+                        target_url = f"https://www.youtube.com/watch?v={chosen_vid}"
+                        played_history[guild_id].append(chosen_vid)
             except: pass
 
     # 기록이 비었거나 추천곡을 못 찾았다면 즉시 분위기에 맞는 곡 장전
     if not target_url:
-        fallback_queries = ["ytsearch1:jpop"]
+        fallback_queries = ["ytsearch1:마비노기 BGM", "ytsearch1:프로젝트 세카이 메들리", "ytsearch1:lofi hip hop radio"]
         query = random.choice(fallback_queries)
         try:
             loop = asyncio.get_event_loop()
             data = await loop.run_in_executor(None, lambda: ytdl.extract_info(query, download=False))
             if 'entries' in data and data['entries']:
                 vid = data['entries'][0].get('id')
-                # 대체 검색 시에도 이상한 원본 파일 대신 깨끗한 주소로 조립합니다.
                 target_url = f"https://www.youtube.com/watch?v={vid}"
                 played_history[guild_id].append(vid)
         except: return
