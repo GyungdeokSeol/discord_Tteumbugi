@@ -353,7 +353,7 @@ async def auto_play_related(guild, last_song):
 
     # 기록이 비었거나 추천곡을 못 찾았다면 즉시 분위기에 맞는 곡 장전
     if not target_url:
-        fallback_queries = ["ytsearch1:마비노기 BGM", "ytsearch1:프로젝트 세카이 메들리", "ytsearch1:lofi hip hop radio"]
+        fallback_queries = ["ytsearch1:jpop"]
         query = random.choice(fallback_queries)
         try:
             loop = asyncio.get_event_loop()
