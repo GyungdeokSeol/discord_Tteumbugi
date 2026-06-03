@@ -178,8 +178,14 @@ async def update_status_message(guild):
             song = display_queue[i]
             title = song['title'] if len(song['title']) <= 35 else song['title'][:35] + "..."
             queue_text += f"`{i+1}.` {title} - {song['requester']}\n"
+            
         if len(display_queue) > max_display:
             queue_text += f"\n*...그리고 **{len(display_queue) - max_display}곡**이 더 대기 중입니다! 🎶*"
+            
+        # ⭐ [여기에 방어막 추가!] 전체 텍스트가 1000자를 넘어가면 강제로 자릅니다.
+        if len(queue_text) > 1000:
+            queue_text = queue_text[:950] + "\n...(글자 수 제한으로 생략됨)"
+            
         embed.add_field(name=f"📜 대기열 (총 {len(display_queue)}곡)", value=queue_text, inline=False)
     else:
         embed.add_field(name="📜 대기열", value="텅 비어있음! 노래를 추가해주세요.", inline=False)
