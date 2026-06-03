@@ -12,6 +12,8 @@ import asyncio
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
+BLOCKED_CHANNELS = ["@BUGISING"]
+
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -234,6 +236,13 @@ async def add_song_logic(interaction, query):
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(target_url, download=False))
         if 'entries' in data: data = data['entries'][0]
 
+        uploader = data.get('uploader_id') or data.get('channel_id')
+        if uploader in BLOCKED_CHANNELS:
+            await send_alert(interaction, f"🚫 **{uploader}** 채널의 영상은 차단되어 재생할 수 없습니다.")
+            return
+
+        final_url = data['url']
+
         final_url = data['url']
         web_url = data.get('webpage_url', final_url)
         if "&list=" in web_url: web_url = web_url.split("&list=")[0]
@@ -287,10 +296,24 @@ async def add_playlist_logic(interaction, url):
         if guild_id not in server_data: server_data[guild_id] = {'user_order': [], 'user_songs': {}}
 
         for entry in entries:
+            for entry in entries:
             if not entry: continue
+            
+            # ⭐ 방어막 2: 재생목록 추출 과정에서 차단 채널 1차 필터링
+            entry_uploader = entry.get('uploader_id'), detail_uploader = detail_data.get('uploader_id')
+            if entry_uploader in BLOCKED_CHANNELS:
+                continue
+
             target_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
+            
             try:
                 detail_data = await loop.run_in_executor(None, lambda: ytdl.extract_info(target_url, download=False))
+                
+                # ⭐ 방어막 3: 상세 정보 추출 후 2차 필터링 (확실하게 차단)
+                detail_uploader = detail_data.get('uploader') or detail_data.get('channel')
+                if detail_uploader in BLOCKED_CHANNELS:
+                    continue
+                    
                 song_info = {
                     'url': detail_data['url'],
                     'web_url': detail_data.get('webpage_url', target_url),
@@ -330,17 +353,19 @@ async def auto_play_related(guild, last_song):
                 loop = asyncio.get_event_loop()
                 data = await loop.run_in_executor(None, lambda: ytdl_playlist.extract_info(mix_url, download=False))
                 if 'entries' in data:
-                    # ⭐ 변경된 부분: 무조건 1번을 뽑지 않고, 새로운 곡 후보를 10개까지 모읍니다!
                     candidate_vids = []
                     for entry in data['entries']:
                         if not entry: continue
                         vid = entry.get('id')
                         
-                        # 기록에 없는 새로운 노래라면 장바구니에 담기
+                        # ⭐ 방어막 4: 유튜브 알고리즘이 차단 채널을 추천하면 후보에서 제외!
+                        uploader = data.get('uploader_id') or data.get('channel_id')
+                        if uploader in BLOCKED_CHANNELS:
+                            continue
+                        
                         if vid and vid not in played_history[guild_id]:
                             candidate_vids.append(vid)
                             
-                        # 후보가 10곡이 모이면 그만 찾기 (숫자를 키울수록 더 뜬금없는 곡이 나옵니다)
                         if len(candidate_vids) >= 10:
                             break
                     
