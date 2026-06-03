@@ -298,11 +298,6 @@ async def add_playlist_logic(interaction, url):
         for entry in entries:
             if not entry: continue
             
-            # ⭐ 방어막 2: 재생목록 추출 과정에서 차단 채널 1차 필터링
-            entry_uploader = entry.get('uploader_id'), detail_uploader = detail_data.get('uploader_id')
-            if entry_uploader in BLOCKED_CHANNELS:
-                continue
-
             target_url = entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
             
             try:
