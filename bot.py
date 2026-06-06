@@ -323,13 +323,16 @@ async def add_playlist_logic(interaction, url):
     except Exception as e:
         await send_alert(interaction, f"❌ 재생목록 처리 중 오류가 발생했습니다: {e}")
 
-# ⭐ A-B-A-B 굴레 완벽 차단용 자동 추천 로직
+# ⭐ A-B-A-B 굴레 차단, 다채로운 가수 추천, 차단 채널 무시, 그리고 '긴 영상(통짜 앨범) 필터링' 로직
 async def auto_play_related(guild, last_song):
     guild_id = guild.id
     if guild_id not in played_history: played_history[guild_id] = []
 
     target_url = None
     bot_user_id = bot.user.id
+    
+    # ⭐ 최대 허용 길이 설정 (초 단위). 기본값은 900초(15분)입니다.
+    MAX_DURATION = 900 
 
     if last_song and 'web_url' in last_song:
         match = re.search(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", last_song['web_url'])
@@ -343,20 +346,28 @@ async def auto_play_related(guild, last_song):
                     candidate_vids = []
                     for entry in data['entries']:
                         if not entry: continue
-                        vid = entry.get('id')
                         
-                        # ⭐ 방어막 4: 유튜브 알고리즘이 차단 채널을 추천하면 후보에서 제외!
-                        uploader = data.get('uploader_id') or data.get('channel_id')
+                        # ⭐ 방어막 5: 영상 길이가 설정된 시간(15분)을 넘으면 패스!
+                        duration = entry.get('duration')
+                        # duration 정보가 있고(생방송은 None일 수 있음), 허용 시간을 초과하면 건너뜁니다.
+                        if duration and duration > MAX_DURATION:
+                            continue
+
+                        # (이전에 추가한) 차단 채널 방어막
+                        uploader = entry.get('uploader') or entry.get('channel')
                         if uploader in BLOCKED_CHANNELS:
                             continue
                         
+                        vid = entry.get('id')
+                        # 기록에 없는 새로운 노래라면 장바구니에 담기
                         if vid and vid not in played_history[guild_id]:
                             candidate_vids.append(vid)
                             
+                        # 후보가 10곡이 모이면 그만 찾기
                         if len(candidate_vids) >= 10:
                             break
                     
-                    # ⭐ 후보군 중에서 무작위(랜덤)로 한 곡을 뽑아 다양성을 확보합니다!
+                    # 후보군 중에서 무작위(랜덤)로 한 곡 뽑기
                     if candidate_vids:
                         chosen_vid = random.choice(candidate_vids)
                         target_url = f"https://www.youtube.com/watch?v={chosen_vid}"
@@ -365,7 +376,7 @@ async def auto_play_related(guild, last_song):
 
     # 기록이 비었거나 추천곡을 못 찾았다면 즉시 분위기에 맞는 곡 장전
     if not target_url:
-        fallback_queries = ["ytsearch1:jpop"]
+        fallback_queries = ["ytsearch1:마비노기 BGM", "ytsearch1:프로젝트 세카이 메들리", "ytsearch1:lofi hip hop radio"]
         query = random.choice(fallback_queries)
         try:
             loop = asyncio.get_event_loop()
