@@ -332,7 +332,7 @@ async def auto_play_related(guild, last_song):
     bot_user_id = bot.user.id
     
     # ⭐ 최대 허용 길이 설정 (초 단위). 기본값은 900초(15분)입니다.
-    MAX_DURATION = 900 
+    MAX_DURATION = 600 
 
     if last_song and 'web_url' in last_song:
         match = re.search(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", last_song['web_url'])
