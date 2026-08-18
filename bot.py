@@ -72,7 +72,7 @@ ytdl_playlist = yt_dlp.YoutubeDL(yt_dl_opts_playlist)
 ffmpeg_options = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
     'options': '-vn'
-}}
+}
 
 
 # --- Helper 함수들 ---
