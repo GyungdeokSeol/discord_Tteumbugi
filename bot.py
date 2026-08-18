@@ -41,9 +41,13 @@ yt_dl_opts = {
     'quiet': True,
     'cookiefile': 'cookies.txt',
     
-    # ⭐ 수정 1: ['nodejs'] 가 아니라 {'nodejs': {}} 형태로 적어야 합니다!
-'js_runtimes': {'deno': {}},
+    # ⭐ 1. 자바스크립트 해석기 명시 (Node.js와 Deno 모두 허용)
+    'js_runtimes': {'nodejs': {}, 'deno': {}},
     
+    # ⭐ 2. (가장 중요!) 유튜브의 최신 JS 암호를 풀기 위한 외부 해독 스크립트 다운로드 허용
+    'remote_components': 'ejs:github',
+    
+    # ⭐ 3. 안드로이드 모바일 기기인 척 위장하여 암호 우회
     'extractor_args': {
         'youtube': ['player_client=android,web']
     }
@@ -56,9 +60,9 @@ yt_dl_opts_playlist = {
     'quiet': True,
     'cookiefile': 'cookies.txt',
     
-    # ⭐ 수정 2: 여기도 똑같이 고쳐줍니다.
-    'js_runtimes': {'nodejs': {}},
-    
+    # (재생목록에도 동일하게 3가지 방어막 모두 적용)
+    'js_runtimes': {'nodejs': {}, 'deno': {}},
+    'remote_components': 'ejs:github',
     'extractor_args': {
         'youtube': ['player_client=android,web']
     }
@@ -68,7 +72,7 @@ ytdl_playlist = yt_dlp.YoutubeDL(yt_dl_opts_playlist)
 ffmpeg_options = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
     'options': '-vn'
-}
+}}
 
 
 # --- Helper 함수들 ---
