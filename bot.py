@@ -39,18 +39,12 @@ yt_dl_opts = {
     'format': 'bestaudio/best',
     'noplaylist': True,
     'quiet': True,
-    'cookiefile': 'cookies.txt',
     
-    # ⭐ 1. 자바스크립트 해석기 명시 (Node.js와 Deno 모두 허용)
-    'js_runtimes': {'nodejs': {}, 'deno': {}},
-    
-    # ⭐ 2. (가장 중요!) 유튜브의 최신 JS 암호를 풀기 위한 외부 해독 스크립트 다운로드 허용
+    # ⭐ 1. 폴더에 세팅해둔 Deno와 Node.js를 정식으로 사용합니다.
+    'js_runtimes': {'deno': {}, 'nodejs': {}},
     'remote_components': 'ejs:github',
     
-    # ⭐ 3. 안드로이드 모바일 기기인 척 위장하여 암호 우회
-    'extractor_args': {
-        'youtube': ['player_client=android,web']
-    }
+    # ⭐ 2. 스피커를 기절시키던 모바일 위장 옵션(extractor_args)은 완전히 삭제했습니다!
 }
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
@@ -58,25 +52,15 @@ yt_dl_opts_playlist = {
     'extract_flat': 'in_playlist',
     'playlistend': 20, 
     'quiet': True,
-    'cookiefile': 'cookies.txt',
     
-    # (재생목록에도 동일하게 3가지 방어막 모두 적용)
-    'js_runtimes': {'nodejs': {}, 'deno': {}},
-    'remote_components': 'ejs:github',
-    'extractor_args': {
-        'youtube': ['player_client=android,web']
-    }
+    'js_runtimes': {'deno': {}, 'nodejs': {}},
+    'remote_components': 'ejs:github'
 }
 ytdl_playlist = yt_dlp.YoutubeDL(yt_dl_opts_playlist)
 
+# ⭐ 3. 스피커(ffmpeg)가 차단당하지 않도록 일반 크롬 브라우저인 것처럼 신분증(User-Agent)을 쥐여줍니다.
 ffmpeg_options = {
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-    'options': '-vn'
-}
-ytdl_playlist = yt_dlp.YoutubeDL(yt_dl_opts_playlist)
-
-ffmpeg_options = {
-    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -user_agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"',
     'options': '-vn'
 }
 
