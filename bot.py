@@ -41,10 +41,9 @@ yt_dl_opts = {
     'quiet': True,
     'cookiefile': 'cookies.txt',
     
-    # ⭐ 추가 1: 봇에게 명시적으로 NodeJS를 사용하라고 강제 지시
-    'js_runtimes': ['nodejs'],
+    # ⭐ 수정 1: ['nodejs'] 가 아니라 {'nodejs': {}} 형태로 적어야 합니다!
+    'js_runtimes': {'nodejs': {}},
     
-    # ⭐ 추가 2: 안드로이드 클라이언트로 위장하여 빡빡한 암호화(JS 서명) 자체를 우회
     'extractor_args': {
         'youtube': ['player_client=android,web']
     }
@@ -57,8 +56,9 @@ yt_dl_opts_playlist = {
     'quiet': True,
     'cookiefile': 'cookies.txt',
     
-    # (재생목록에도 똑같이 적용)
-    'js_runtimes': ['nodejs'],
+    # ⭐ 수정 2: 여기도 똑같이 고쳐줍니다.
+    'js_runtimes': {'nodejs': {}},
+    
     'extractor_args': {
         'youtube': ['player_client=android,web']
     }
@@ -69,6 +69,8 @@ ffmpeg_options = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
     'options': '-vn'
 }
+
+
 # --- Helper 함수들 ---
 async def delete_later(msg, delay):
     await asyncio.sleep(delay)
