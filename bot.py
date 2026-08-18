@@ -36,15 +36,13 @@ played_history = {}  # ⭐ A-B-A-B 굴레 방지를 위한 최근 재생 기록 
 
 # --- 유튜브/FFmpeg 옵션 ---
 yt_dl_opts = {
-    'format': 'bestaudio/best',
+    # ⭐ 핵심 수정: WebM을 차단하고 가장 안정적인 m4a 포맷을 1순위로 강제합니다.
+    'format': 'bestaudio[ext=m4a]/bestaudio/best',
     'noplaylist': True,
     'quiet': True,
     
-    # ⭐ 1. 폴더에 세팅해둔 Deno와 Node.js를 정식으로 사용합니다.
     'js_runtimes': {'deno': {}, 'nodejs': {}},
     'remote_components': 'ejs:github',
-    
-    # ⭐ 2. 스피커를 기절시키던 모바일 위장 옵션(extractor_args)은 완전히 삭제했습니다!
 }
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
 
@@ -53,12 +51,13 @@ yt_dl_opts_playlist = {
     'playlistend': 20, 
     'quiet': True,
     
+    # ⭐ 재생목록 옵션은 format 설정이 필요 없으므로 그대로 둡니다.
     'js_runtimes': {'deno': {}, 'nodejs': {}},
     'remote_components': 'ejs:github'
 }
 ytdl_playlist = yt_dlp.YoutubeDL(yt_dl_opts_playlist)
 
-# ⭐ 3. 스피커(ffmpeg)가 차단당하지 않도록 일반 크롬 브라우저인 것처럼 신분증(User-Agent)을 쥐여줍니다.
+# (ffmpeg 옵션은 기존에 쓰시던 정공법 옵션 그대로 둡니다)
 ffmpeg_options = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -user_agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"',
     'options': '-vn'
