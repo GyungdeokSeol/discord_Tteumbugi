@@ -1,0 +1,1 @@
+MAX_DURATION = 최대 길이(초)
