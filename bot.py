@@ -39,17 +39,14 @@ yt_dl_opts = {
     'format': 'bestaudio/best',
     'noplaylist': True,
     'quiet': True,
-    'cookiefile': 'cookies.txt',
     
-    # ⭐ 1. 자바스크립트 해석기 명시 (Node.js와 Deno 모두 허용)
-    'js_runtimes': {'nodejs': {}, 'deno': {}},
+    # ⭐ 방어막 1: 만료 시 ffmpeg를 기절시키는 주범인 쿠키 기능을 아예 비활성화 (지움)
+    # 'cookiefile': 'cookies.txt', 
     
-    # ⭐ 2. (가장 중요!) 유튜브의 최신 JS 암호를 풀기 위한 외부 해독 스크립트 다운로드 허용
-    'remote_components': 'ejs:github',
-    
-    # ⭐ 3. 안드로이드 모바일 기기인 척 위장하여 암호 우회
+    # ⭐ 방어막 2: JS 암호를 깐깐하게 요구하는 'web(PC)' 통로를 아예 빼버리고, 
+    # 암호 검사가 헐거운 모바일(android, ios)과 스마트TV 통로로만 위장 접속!
     'extractor_args': {
-        'youtube': ['player_client=android,web']
+        'youtube': ['player_client=android,ios,tv']
     }
 }
 ytdl = yt_dlp.YoutubeDL(yt_dl_opts)
@@ -58,13 +55,11 @@ yt_dl_opts_playlist = {
     'extract_flat': 'in_playlist',
     'playlistend': 20, 
     'quiet': True,
-    'cookiefile': 'cookies.txt',
     
-    # (재생목록에도 동일하게 3가지 방어막 모두 적용)
-    'js_runtimes': {'nodejs': {}, 'deno': {}},
-    'remote_components': 'ejs:github',
+    # ⭐ 재생목록에도 동일하게 쿠키 기능을 끄고 모바일 위장 접속 적용
+    # 'cookiefile': 'cookies.txt',
     'extractor_args': {
-        'youtube': ['player_client=android,web']
+        'youtube': ['player_client=android,ios,tv']
     }
 }
 ytdl_playlist = yt_dlp.YoutubeDL(yt_dl_opts_playlist)
@@ -73,7 +68,6 @@ ffmpeg_options = {
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
     'options': '-vn'
 }
-
 
 # --- Helper 함수들 ---
 async def delete_later(msg, delay):
