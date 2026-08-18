@@ -42,7 +42,7 @@ yt_dl_opts = {
     'cookiefile': 'cookies.txt',
     
     # ⭐ 수정 1: ['nodejs'] 가 아니라 {'nodejs': {}} 형태로 적어야 합니다!
-    'js_runtimes': {'nodejs': {}},
+'js_runtimes': {'deno': {}},
     
     'extractor_args': {
         'youtube': ['player_client=android,web']
